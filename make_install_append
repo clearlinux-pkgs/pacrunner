@@ -1,0 +1,10 @@
+mkdir -p %{buildroot}/usr/lib/systemd/system
+install -m644 src/pacrunner.service %{buildroot}/usr/lib/systemd/system/
+install -m644 src/pacdiscovery.service %{buildroot}/usr/lib/systemd/system/
+install -m644 src/pacdiscovery.path %{buildroot}/usr/lib/systemd/system/
+mkdir -p %{buildroot}/usr/lib/systemd/system/multi-user.target.wants
+ln -s ../pacdiscovery.path %{buildroot}/usr/lib/systemd/system/multi-user.target.wants/
+mkdir -p %{buildroot}/usr/lib/tmpfiles.d
+install -m644 src/pacdiscovery.conf %{buildroot}/usr/lib/tmpfiles.d/
+mkdir -p %{buildroot}/usr/share/dbus-1/system.d
+install -m644 src/pacrunner.conf %{buildroot}/usr/share/dbus-1/system.d/

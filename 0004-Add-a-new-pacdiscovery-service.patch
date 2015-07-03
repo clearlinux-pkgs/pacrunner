@@ -1,0 +1,329 @@
+From 61c58a6421098d9c5452c622fec16e01871d7088 Mon Sep 17 00:00:00 2001
+From: Patrick McCarty <patrick.mccarty@intel.com>
+Date: Mon, 24 Jul 2017 16:52:56 -0700
+Subject: [PATCH 4/4] Add a new 'pacdiscovery' service
+
+On the Clear Linux OS for Intel Architecture, systemd-networkd is the
+default network manager. Since it does not talk to pacrunner, we have
+implemented a basic service called 'pacdiscovery' that performs a DNS
+query for "wpad" and uses the query result to create pacrunner's proxy
+configuration. To keep the configuration active, pacdiscovery keeps this
+connection to pacrunner open, and the service sits idle until the system
+reboots or the user manually stops or restarts it.
+
+Note that the service is path activated through systemd whenever
+systemd-networkd has set up a DHCP lease. So, static IP configurations
+are not supported (at the moment) for auto-activation of pacdiscovery.
+
+Signed-off-by: Patrick McCarty <patrick.mccarty@intel.com>
+---
+ Makefile.am              |  11 ++-
+ configure.ac             |   2 +
+ src/discovery.c          | 201 +++++++++++++++++++++++++++++++++++++++++++++++
+ src/pacdiscovery.conf    |   1 +
+ src/pacdiscovery.path    |   8 ++
+ src/pacdiscovery.service |  12 +++
+ 6 files changed, 234 insertions(+), 1 deletion(-)
+ create mode 100644 src/discovery.c
+ create mode 100644 src/pacdiscovery.conf
+ create mode 100644 src/pacdiscovery.path
+ create mode 100644 src/pacdiscovery.service
+
+diff --git a/Makefile.am b/Makefile.am
+index e520416..31a2296 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -67,7 +67,8 @@ endif
+ 
+ duktape_libduktape_a_SHORTNAME = libduktape
+ 
+-sbin_PROGRAMS = src/pacrunner
++sbin_PROGRAMS = src/pacrunner \
++		src/pacdiscovery
+ 
+ src_pacrunner_SOURCES = $(gdbus_sources) $(builtin_sources) $(js_sources) \
+ 			src/main.c src/pacrunner.h \
+@@ -76,6 +77,11 @@ src_pacrunner_SOURCES = $(gdbus_sources) $(builtin_sources) $(js_sources) \
+ 			src/client.c src/manager.c src/proxy.c \
+ 			src/manual.c src/js.h src/js.c
+ 
++src_pacdiscovery_SOURCES = src/discovery.c
++
++src_pacdiscovery_CFLAGS = @SYSTEMD_BUS_CFLAGS@
++src_pacdiscovery_LDADD = @SYSTEMD_BUS_LIBS@
++
+ src_pacrunner_LDADD = $(builtin_libadd) @GLIB_LIBS@ @PTHREAD_LIBS@ \
+ 							@DBUS_LIBS@ -ldl
+ 
+@@ -183,6 +189,9 @@ CLEANFILES = src/builtin.h
+ 
+ EXTRA_DIST = src/genbuiltin src/pacrunner.conf $(test_scripts) \
+ 			src/pacrunner.service \
++			src/pacdiscovery.conf \
++			src/pacdiscovery.service \
++			src/pacdiscovery.path \
+ 			doc/architecture.txt doc/libproxy.txt \
+ 			doc/manager-api.txt doc/client-api.txt \
+ 			doc/manual-configuration.txt
+diff --git a/configure.ac b/configure.ac
+index 1577c86..d09aa7e 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -92,6 +92,8 @@ if (test "${enable_v8}" = "yes"); then
+ fi
+ AM_CONDITIONAL(V8, test "${enable_v8}" = "yes")
+ 
++PKG_CHECK_MODULES([SYSTEMD_BUS],[libsystemd >= 221])
++
+ PKG_CHECK_MODULES(GLIB, glib-2.0 >= 2.16, dummy=yes,
+ 				AC_MSG_ERROR(GLib >= 2.16 is required))
+ AC_SUBST(GLIB_CFLAGS)
+diff --git a/src/discovery.c b/src/discovery.c
+new file mode 100644
+index 0000000..987a3d1
+--- /dev/null
++++ b/src/discovery.c
+@@ -0,0 +1,201 @@
++/*
++ * PAC file discovery service
++ *
++ * Copyright (C) 2013-2015 Intel Corporation
++ *
++ * This library is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU Lesser General Public License
++ * version 2.1 as published by the Free Software Foundation.
++ *
++ * This library is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License
++ * for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public License
++ * along with this program; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
++ */
++
++/*
++ * NOTE: the resolve() function is derived from the PACRunner jsengine code
++ * (copyright 2013, LGPL-2.1).
++ */
++
++#define _GNU_SOURCE
++#include <errno.h>
++#include <fcntl.h>
++#include <netdb.h>
++#include <signal.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <sys/socket.h>
++#include <sys/stat.h>
++#include <sys/types.h>
++#include <unistd.h>
++#include <malloc.h>
++
++/* Certain static analysis tools do not understand GCC's __INCLUDE_LEVEL__
++ * macro; the conditional definition below is used to fix the build with
++ * systemd's _sd-common.h, included by the public systemd headers, which rely on
++ * the macro being defined and having an accurate value.
++ */
++#ifndef __INCLUDE_LEVEL__
++# define __INCLUDE_LEVEL__ 2
++#endif
++
++#include <systemd/sd-bus.h>
++
++char *resolve(char *str)
++{
++        struct addrinfo *info;
++        struct addrinfo hints;
++        char addr[65];
++        int err;
++
++        if (setenv("LC_ALL", "C", 1))
++            perror("Cannot set LC_ALL to C");
++
++        memset(&hints, 0, sizeof(struct addrinfo));
++        hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
++        hints.ai_socktype = SOCK_DGRAM; /* Datagram socket */
++        hints.ai_flags = 0;
++        hints.ai_protocol = 0;          /* Any protocol */
++
++        if ((err = getaddrinfo(str, NULL, &hints, &info)) != 0) {
++                fprintf(stderr, "failed getaddrinfo: %s\n", gai_strerror(err));
++                return NULL;
++        }
++
++        err = getnameinfo(info->ai_addr, info->ai_addrlen,
++                          addr, 65, NULL, 0, 0);
++        if (err < 0) {
++                fprintf(stderr, "failed getnameinfo: %s\n", gai_strerror(err));
++                freeaddrinfo(info);
++                return NULL;
++        }
++
++        freeaddrinfo(info);
++        return strdup(addr);
++}
++
++int send_to_pacrunner(char *host)
++{
++        sd_bus *system_bus = NULL;
++        sd_bus_error errstr = SD_BUS_ERROR_NULL;
++        sd_bus_message *obj = NULL;
++        char *configstr, *url;
++        int ret = -1;
++
++        if ((ret = sd_bus_open_system(&system_bus)) < 0) {
++                fprintf(stderr, "Cannot connect to system bus: %s\n",
++                        strerror(-ret));
++                goto bail;
++        }
++
++        // FIXME: need to support HTTPS URLs?
++        if (asprintf(&url, "http://%s/wpad.dat", host) < 0) {
++                goto bail;
++        }
++
++        fprintf(stderr, "PAC url: %s\n", url);
++
++        ret = sd_bus_call_method(system_bus, "org.pacrunner",
++                                 "/org/pacrunner/manager",
++                                 "org.pacrunner.Manager",
++                                 "CreateProxyConfiguration",
++                                 &errstr, &obj, "a{sv}", 2,
++                                 "Method", "s", "auto",
++                                 "URL", "s", url);
++        if (ret < 0) {
++                fprintf(stderr, "Failed to create proxy config: %s\n",
++                        errstr.message);
++                goto bail;
++        }
++
++        if ((ret = sd_bus_message_read(obj, "o", &configstr)) < 0) {
++                fprintf(stderr, "Failed to read response from Pacrunner: %s\n",
++                        strerror(-ret));
++                goto bail;
++        }
++
++        fprintf(stderr, "Registered config: %s\n", configstr);
++
++        // FIXME: need to call DestroyProxyConfiguration when finished with the
++        // current configuration.
++
++        ret = 0;
++bail:
++        return ret;
++
++}
++
++static int state_fd = -1;
++static const char *state_file = "/run/pacrunner/pac_active";
++
++int create_state_file(void)
++{
++        int fd = -1;
++        int ret = -1;
++
++        if ((fd = open(state_file, O_WRONLY|O_CREAT, 00644)) < 0) {
++                fprintf(stderr, "Cannot create file %s: %s\n", state_file,
++                        strerror(errno));
++                goto fail;
++        }
++
++        state_fd = fd;
++
++        ret = 0;
++fail:
++        return ret;
++}
++
++static void remove_state_and_exit(int signum)
++{
++        /* state file may not have been created yet, so ignore errors */
++        unlink(state_file);
++        _exit(0);
++}
++
++int main(void)
++{
++        char *domain = NULL;
++        int ret = 0;
++        struct sigaction sa;
++
++        memset(&sa, 0, sizeof(sa));
++        sa.sa_handler = remove_state_and_exit;
++        sigaction(SIGHUP, &sa, NULL);
++        sigaction(SIGINT, &sa, NULL);
++        sigaction(SIGTERM, &sa, NULL);
++
++        if ((domain = resolve("wpad")) == NULL) {
++                fprintf(stderr, "Unable to find wpad host\n");
++                ret = 2;
++                goto out;
++        }
++
++        if (send_to_pacrunner(domain) < 0) {
++                ret = 1;
++                goto out;
++        }
++
++        if (create_state_file() < 0) {
++                ret = 1;
++                goto out;
++        }
++
++        // FIXME: add inotify() watch to detect network state changes; for now,
++        // just sleep forever.
++        malloc_trim(0);
++        pause();
++out:
++        if (state_fd >= 0) {
++                close(state_fd);
++        }
++        free(domain);
++        return ret;
++}
++
++/* vi: set ts=8 sw=8 sts=4 et tw=80 cino=(0: */
+diff --git a/src/pacdiscovery.conf b/src/pacdiscovery.conf
+new file mode 100644
+index 0000000..1caf5bc
+--- /dev/null
++++ b/src/pacdiscovery.conf
+@@ -0,0 +1 @@
++d /run/pacrunner 0755 pacrunner pacrunner
+diff --git a/src/pacdiscovery.path b/src/pacdiscovery.path
+new file mode 100644
+index 0000000..793971c
+--- /dev/null
++++ b/src/pacdiscovery.path
+@@ -0,0 +1,8 @@
++[Unit]
++Description=Proxy AutoConfig discovery service (lease directory watch)
++
++[Path]
++DirectoryNotEmpty=/run/systemd/netif/leases
++
++[Install]
++WantedBy=multi-user.target
+diff --git a/src/pacdiscovery.service b/src/pacdiscovery.service
+new file mode 100644
+index 0000000..c2c35d5
+--- /dev/null
++++ b/src/pacdiscovery.service
+@@ -0,0 +1,12 @@
++[Unit]
++Description=Proxy AutoConfig discovery service
++Requires=systemd-resolved.service
++After=systemd-resolved.service
++
++[Service]
++ExecStart=/usr/sbin/pacdiscovery
++SuccessExitStatus=2
++User=pacrunner
++
++[Install]
++WantedBy=multi-user.target
+-- 
+2.13.3
+

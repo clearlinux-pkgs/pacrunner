@@ -1,0 +1,4 @@
+0001-dbus-Rename-D-Bus-autostart-service-file-name.patch
+0002-Update-pacrunner-dbus-config.patch
+0003-Add-initial-systemd-service-file.patch
+0004-Add-a-new-pacdiscovery-service.patch

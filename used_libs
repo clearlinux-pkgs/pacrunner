@@ -1,0 +1,8 @@
+libc.so.6
+libcurl.so.4
+libdbus-1.so.3
+libdl.so.2
+libglib-2.0.so.0
+libm.so.6
+libpthread.so.0
+libsystemd.so.0

@@ -1,0 +1,4 @@
+--enable-duktape
+--disable-mozjs
+--enable-curl
+--enable-debug

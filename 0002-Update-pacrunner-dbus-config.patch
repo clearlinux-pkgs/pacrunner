@@ -1,0 +1,43 @@
+From f131912c96846d3404012c4fcf7e14bf43c31ef1 Mon Sep 17 00:00:00 2001
+From: Tudor Marcu <tudor.marcu@intel.com>
+Date: Wed, 7 Oct 2015 16:37:53 -0700
+Subject: [PATCH 2/4] Update pacrunner dbus config
+
+Pacrunner will not run as root, and should use the created pacrunner user. This
+is also a bus-activatable service, and should describe the corresponding systemd
+service file it uses.
+
+Signed-off-by: Tudor Marcu <tudor.marcu@intel.com>
+Signed-off-by: Patrick McCarty <patrick.mccarty@intel.com>
+---
+ src/org.pacrunner.service.in | 3 ++-
+ src/pacrunner.conf           | 2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/src/org.pacrunner.service.in b/src/org.pacrunner.service.in
+index eafd39d..feefc13 100644
+--- a/src/org.pacrunner.service.in
++++ b/src/org.pacrunner.service.in
+@@ -1,4 +1,5 @@
+ [D-BUS Service]
+ Name=org.pacrunner
+ Exec=@prefix@/sbin/pacrunner
+-User=root
++User=pacrunner
++SystemdService=pacrunner.service
+diff --git a/src/pacrunner.conf b/src/pacrunner.conf
+index 9028261..843f8a5 100644
+--- a/src/pacrunner.conf
++++ b/src/pacrunner.conf
+@@ -1,7 +1,7 @@
+ <!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"
+  "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+ <busconfig>
+-    <policy user="root">
++    <policy user="pacrunner">
+         <allow own="org.pacrunner"/>
+         <allow send_destination="org.pacrunner"/>
+     </policy>
+-- 
+2.13.3
+
