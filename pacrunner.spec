@@ -4,7 +4,7 @@
 #
 Name     : pacrunner
 Version  : 0.11
-Release  : 31
+Release  : 32
 URL      : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.11.tar.xz
 Source0  : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.11.tar.xz
 Summary  : Proxy Configuration Library
@@ -23,6 +23,7 @@ Patch1: 0001-dbus-Rename-D-Bus-autostart-service-file-name.patch
 Patch2: 0002-Update-pacrunner-dbus-config.patch
 Patch3: 0003-Add-initial-systemd-service-file.patch
 Patch4: 0004-Add-a-new-pacdiscovery-service.patch
+Patch5: 0005-Use-trimmed-down-glibc-C-locale.patch
 
 %description
 PACrunner - Proxy configuration daemon
@@ -70,13 +71,14 @@ data components for the pacrunner package.
 %patch2 -p1
 %patch3 -p1
 %patch4 -p1
+%patch5 -p1
 
 %build
 export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C
-export SOURCE_DATE_EPOCH=1500941899
+export SOURCE_DATE_EPOCH=1500945968
 %reconfigure --disable-static --enable-duktape \
 --disable-mozjs \
 --enable-curl \
@@ -91,7 +93,7 @@ export no_proxy=localhost,127.0.0.1,0.0.0.0
 make VERBOSE=1 V=1 %{?_smp_mflags} check
 
 %install
-export SOURCE_DATE_EPOCH=1500941899
+export SOURCE_DATE_EPOCH=1500945968
 rm -rf %{buildroot}
 %make_install
 ## make_install_append content
