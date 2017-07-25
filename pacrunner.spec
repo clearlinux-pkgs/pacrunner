@@ -4,7 +4,7 @@
 #
 Name     : pacrunner
 Version  : 0.11
-Release  : 30
+Release  : 31
 URL      : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.11.tar.xz
 Source0  : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.11.tar.xz
 Summary  : Proxy Configuration Library
