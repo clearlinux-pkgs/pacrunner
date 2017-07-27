@@ -1,7 +1,7 @@
 From 008f569fc0c427fcb798a1ef306c1f780450f11b Mon Sep 17 00:00:00 2001
 From: Patrick McCarty <patrick.mccarty@intel.com>
 Date: Wed, 7 Oct 2015 21:07:49 -0700
-Subject: [PATCH 3/5] Add initial systemd service file
+Subject: [PATCH 3/6] Add initial systemd service file
 
 Should probably make a template .in file for this one as well, similar
 to the DBus service.

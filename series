@@ -3,3 +3,4 @@
 0003-Add-initial-systemd-service-file.patch
 0004-Add-a-new-pacdiscovery-service.patch
 0005-Use-trimmed-down-glibc-C-locale.patch
+0006-Add-port-stripping-for-FindProxyForURL.patch

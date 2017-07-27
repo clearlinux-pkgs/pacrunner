@@ -1,0 +1,93 @@
+From 441b998d16900b1799f276ec602e372331c8ed34 Mon Sep 17 00:00:00 2001
+From: "Brad T. Peters" <brad.t.peters@intel.com>
+Date: Thu, 4 Feb 2016 10:16:13 -0800
+Subject: [PATCH 6/6] Add port stripping for FindProxyForURL
+
+When port is included in url for proxy lookup, jsengine is
+not parsing the proxy script properly. This patch strips port
+details from url and host pairs for this function only
+
+Signed-off-by: Tudor Marcu <tudor.marcu@intel.com>
+---
+
+Since upstream contains a duktape plugin in-tree now, I've adapted this
+patch to apply to duktape_execute in duktape.c instead of
+jsengine_execute in the old jsengine.c.
+
+Signed-off-by: Patrick McCarty <patrick.mccarty@intel.com>
+---
+ plugins/duktape.c | 40 ++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 38 insertions(+), 2 deletions(-)
+
+diff --git a/plugins/duktape.c b/plugins/duktape.c
+index a8a93bc..0d54e72 100644
+--- a/plugins/duktape.c
++++ b/plugins/duktape.c
+@@ -167,10 +167,41 @@ static int duktape_set_proxy(struct pacrunner_proxy *proxy)
+ 	return create_object(proxy);
+ }
+ 
++/* strip_port(char *url):
++ * Takes any valid URL and strips out port details.
++ * Intended for FindProxyForURL, which returns a flawed
++ * result if port details remain
++ *
++ * Return: Alloc'd cleaned string which caller must free */
++static char *strip_port(const char *url)
++{
++	char *cleanurl;
++	int src = 0, targ = 0;
++
++	cleanurl = (char *)malloc(strlen(url) + 1);
++
++	while (src < strlen(url)) {
++		if ((url[src] == ':') && (isdigit(url[src + 1]))) {
++			/* Skip ':' and any digits which follow */
++			while ((url[src] == ':') || (isdigit(url[src])))
++				src++;
++		} else {
++			cleanurl[targ] = url[src];
++			src++;
++			targ++;
++		}
++	}
++
++	cleanurl[targ] = '\0';
++
++	return cleanurl;
++}
++
+ static char *duktape_execute(struct pacrunner_proxy *proxy,
+ 			     const char *url, const char *host)
+ {
+ 	struct pacrunner_duktape *ctx = __pacrunner_proxy_get_jsctx(proxy);
++	char *cleanurl, *cleanhost;
+ 	char *result;
+ 
+ 	DBG("proxy %p ctx %p url %s host %s", proxy, ctx, url, host);
+@@ -182,8 +213,11 @@ static char *duktape_execute(struct pacrunner_proxy *proxy,
+ 
+ 	duk_get_prop_string(ctx->dctx, -1 /*index*/, "FindProxyForURL");
+ 
+-	duk_push_string(ctx->dctx, url);
+-	duk_push_string(ctx->dctx, host);
++	cleanurl = strip_port(url);
++	cleanhost = strip_port(host);
++
++	duk_push_string(ctx->dctx, cleanurl);
++	duk_push_string(ctx->dctx, cleanhost);
+ 	if (duk_pcall(ctx->dctx, 2 /*nargs*/) != 0) {
+ 		pacrunner_error("Error: %s\n",
+ 				duk_safe_to_string(ctx->dctx, -1));
+@@ -197,6 +231,8 @@ static char *duktape_execute(struct pacrunner_proxy *proxy,
+ 		DBG("the return string is: %s\n", result);
+ 	}
+ 
++	free(cleanurl);
++	free(cleanhost);
+ 	pthread_mutex_unlock(&ctx->lock);
+ 
+ 	return result;
+-- 
+2.13.3
+

@@ -1,7 +1,7 @@
 From 61c58a6421098d9c5452c622fec16e01871d7088 Mon Sep 17 00:00:00 2001
 From: Patrick McCarty <patrick.mccarty@intel.com>
 Date: Mon, 24 Jul 2017 16:52:56 -0700
-Subject: [PATCH 4/5] Add a new 'pacdiscovery' service
+Subject: [PATCH 4/6] Add a new 'pacdiscovery' service
 
 On the Clear Linux OS for Intel Architecture, systemd-networkd is the
 default network manager. Since it does not talk to pacrunner, we have

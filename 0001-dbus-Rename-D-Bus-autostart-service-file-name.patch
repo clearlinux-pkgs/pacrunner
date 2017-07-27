@@ -1,7 +1,7 @@
 From 2b8cf62e2812210402ba164e42e65065d17e7f50 Mon Sep 17 00:00:00 2001
 From: Julien Massot <jmassot@softbankrobotics.com>
 Date: Thu, 20 Jul 2017 09:11:32 +0200
-Subject: [PATCH 1/5] dbus: Rename D-Bus autostart service file name
+Subject: [PATCH 1/6] dbus: Rename D-Bus autostart service file name
 
 The autostart file needs to match the service name according the D-Bus
 specification [1]:
