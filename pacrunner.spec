@@ -4,7 +4,7 @@
 #
 Name     : pacrunner
 Version  : 0.11
-Release  : 33
+Release  : 34
 URL      : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.11.tar.xz
 Source0  : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.11.tar.xz
 Summary  : Proxy Configuration Library
@@ -13,6 +13,7 @@ License  : GPL-2.0 LGPL-2.1
 Requires: pacrunner-bin
 Requires: pacrunner-autostart
 Requires: pacrunner-config
+Requires: pacrunner-lib
 Requires: pacrunner-data
 BuildRequires : flex-dev
 BuildRequires : pkgconfig(dbus-1)
@@ -66,6 +67,27 @@ Group: Data
 data components for the pacrunner package.
 
 
+%package dev
+Summary: dev components for the pacrunner package.
+Group: Development
+Requires: pacrunner-lib
+Requires: pacrunner-bin
+Requires: pacrunner-data
+Provides: pacrunner-devel
+
+%description dev
+dev components for the pacrunner package.
+
+
+%package lib
+Summary: lib components for the pacrunner package.
+Group: Libraries
+Requires: pacrunner-data
+
+%description lib
+lib components for the pacrunner package.
+
+
 %prep
 %setup -q -n pacrunner-0.11
 %patch1 -p1
@@ -80,11 +102,12 @@ export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C
-export SOURCE_DATE_EPOCH=1501133565
+export SOURCE_DATE_EPOCH=1507490273
 %reconfigure --disable-static --enable-duktape \
 --disable-mozjs \
 --enable-curl \
---enable-debug
+--enable-debug \
+--enable-libproxy
 make V=1  %{?_smp_mflags}
 
 %check
@@ -95,7 +118,7 @@ export no_proxy=localhost,127.0.0.1,0.0.0.0
 make VERBOSE=1 V=1 %{?_smp_mflags} check
 
 %install
-export SOURCE_DATE_EPOCH=1501133565
+export SOURCE_DATE_EPOCH=1507490273
 rm -rf %{buildroot}
 %make_install
 ## make_install_append content
@@ -120,8 +143,10 @@ install -m644 src/pacrunner.conf %{buildroot}/usr/share/dbus-1/system.d/
 
 %files bin
 %defattr(-,root,root,-)
+/usr/bin/manual-proxy-test
 /usr/bin/pacdiscovery
 /usr/bin/pacrunner
+/usr/bin/proxy
 
 %files config
 %defattr(-,root,root,-)
@@ -135,3 +160,14 @@ install -m644 src/pacrunner.conf %{buildroot}/usr/share/dbus-1/system.d/
 %defattr(-,root,root,-)
 /usr/share/dbus-1/system-services/org.pacrunner.service
 /usr/share/dbus-1/system.d/pacrunner.conf
+
+%files dev
+%defattr(-,root,root,-)
+/usr/include/*.h
+/usr/lib64/libproxy.so
+/usr/lib64/pkgconfig/libproxy-1.0.pc
+
+%files lib
+%defattr(-,root,root,-)
+/usr/lib64/libproxy.so.1
+/usr/lib64/libproxy.so.1.0.0

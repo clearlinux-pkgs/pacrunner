@@ -1,0 +1,3 @@
+libproxy.so.1:px_proxy_factory_free
+libproxy.so.1:px_proxy_factory_get_proxies
+libproxy.so.1:px_proxy_factory_new
