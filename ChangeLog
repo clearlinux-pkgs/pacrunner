@@ -1,3 +1,10 @@
+ver 0.13:
+	Add support for Duktape 2.2.0 engine release.
+
+ver 0.12:
+	Fix issue with D-Bus autostart service file.
+	Add support for Duktape 2.1.1 engine release.
+
 ver 0.11:
 	Fix issue with unclean shutdown when disabling proxy.
 	Add support for building against SpiderMonkey 38.
