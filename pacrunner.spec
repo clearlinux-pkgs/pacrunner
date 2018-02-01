@@ -4,7 +4,7 @@
 #
 Name     : pacrunner
 Version  : 0.13
-Release  : 36
+Release  : 37
 URL      : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.13.tar.xz
 Source0  : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.13.tar.xz
 Summary  : Proxy Configuration Library
@@ -100,13 +100,13 @@ export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C
-export SOURCE_DATE_EPOCH=1512141890
+export SOURCE_DATE_EPOCH=1517513253
 %reconfigure --disable-static --enable-duktape \
 --disable-mozjs \
 --enable-curl \
 --enable-debug \
 --enable-libproxy
-make V=1  %{?_smp_mflags}
+make  %{?_smp_mflags}
 
 %check
 export LANG=C
@@ -116,7 +116,7 @@ export no_proxy=localhost,127.0.0.1,0.0.0.0
 make VERBOSE=1 V=1 %{?_smp_mflags} check
 
 %install
-export SOURCE_DATE_EPOCH=1512141890
+export SOURCE_DATE_EPOCH=1517513253
 rm -rf %{buildroot}
 %make_install
 ## make_install_append content
@@ -130,6 +130,9 @@ mkdir -p %{buildroot}/usr/lib/tmpfiles.d
 install -m644 src/pacdiscovery.conf %{buildroot}/usr/lib/tmpfiles.d/
 mkdir -p %{buildroot}/usr/share/dbus-1/system.d
 install -m644 src/pacrunner.conf %{buildroot}/usr/share/dbus-1/system.d/
+mkdir -p %{buildroot}/usr/share/clr-service-restart
+ln -sf /usr/lib/systemd/system/pacdiscovery.service %{buildroot}/usr/share/clr-service-restart/pacdiscovery.service
+ln -sf /usr/lib/systemd/system/pacrunner.service %{buildroot}/usr/share/clr-service-restart/pacrunner.service
 ## make_install_append end
 
 %files
@@ -156,6 +159,8 @@ install -m644 src/pacrunner.conf %{buildroot}/usr/share/dbus-1/system.d/
 
 %files data
 %defattr(-,root,root,-)
+/usr/share/clr-service-restart/pacdiscovery.service
+/usr/share/clr-service-restart/pacrunner.service
 /usr/share/dbus-1/system-services/org.pacrunner.service
 /usr/share/dbus-1/system.d/pacrunner.conf
 
