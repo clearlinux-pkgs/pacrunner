@@ -1,7 +1,7 @@
-From d0ea097a4acb336dc127a6019f4261112fcad2e0 Mon Sep 17 00:00:00 2001
+From 883cd2fc3853b936a341287b7f62e7355012c1b1 Mon Sep 17 00:00:00 2001
 From: Arjan van de Ven <arjan@linux.intel.com>
 Date: Thu, 19 Nov 2015 16:43:18 -0800
-Subject: [PATCH 5/6] Use trimmed down glibc C locale
+Subject: [PATCH 4/5] Use trimmed down glibc C locale
 
 We don't do any translations with pacrunner, so we can avoid using the UTF8
 locale and potentially save some space/memory.
@@ -26,5 +26,5 @@ index f3767e8..6a503b7 100644
  	g_option_context_add_main_entries(context, options, NULL);
  
 -- 
-2.13.3
+2.16.2
 

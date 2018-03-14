@@ -1,7 +1,7 @@
-From 61c58a6421098d9c5452c622fec16e01871d7088 Mon Sep 17 00:00:00 2001
+From 874c2b04b995f44608db9e89dbc1255963a73a48 Mon Sep 17 00:00:00 2001
 From: Patrick McCarty <patrick.mccarty@intel.com>
 Date: Mon, 24 Jul 2017 16:52:56 -0700
-Subject: [PATCH 4/6] Add a new 'pacdiscovery' service
+Subject: [PATCH 3/5] Add a new 'pacdiscovery' (V2) service
 
 On the Clear Linux OS for Intel Architecture, systemd-networkd is the
 default network manager. Since it does not talk to pacrunner, we have
@@ -15,25 +15,31 @@ Note that the service is path activated through systemd whenever
 systemd-networkd has set up a DHCP lease. So, static IP configurations
 are not supported (at the moment) for auto-activation of pacdiscovery.
 
+V2 of this patch changes significantly how pacdiscovery handles errors
+and tries to be more robust in obtaining the WPAD address. It only
+uses IPv4 since this is per spec, retries DNS lookups and will monitor
+pacrunner and notice when it exits and restarts, and redo the
+initialization sequence properly.
+
 Signed-off-by: Patrick McCarty <patrick.mccarty@intel.com>
 ---
- Makefile.am              |  11 ++-
+ Makefile.am              |  11 +-
  configure.ac             |   2 +
- src/discovery.c          | 201 +++++++++++++++++++++++++++++++++++++++++++++++
+ src/discovery.c          | 287 +++++++++++++++++++++++++++++++++++++++++++++++
  src/pacdiscovery.conf    |   1 +
  src/pacdiscovery.path    |   8 ++
- src/pacdiscovery.service |  12 +++
- 6 files changed, 234 insertions(+), 1 deletion(-)
+ src/pacdiscovery.service |  12 ++
+ 6 files changed, 320 insertions(+), 1 deletion(-)
  create mode 100644 src/discovery.c
  create mode 100644 src/pacdiscovery.conf
  create mode 100644 src/pacdiscovery.path
  create mode 100644 src/pacdiscovery.service
 
 diff --git a/Makefile.am b/Makefile.am
-index e520416..31a2296 100644
+index 452ba0a..9a87c22 100644
 --- a/Makefile.am
 +++ b/Makefile.am
-@@ -67,7 +67,8 @@ endif
+@@ -66,7 +66,8 @@ endif
  
  duktape_libduktape_a_SHORTNAME = libduktape
  
@@ -43,7 +49,7 @@ index e520416..31a2296 100644
  
  src_pacrunner_SOURCES = $(gdbus_sources) $(builtin_sources) $(js_sources) \
  			src/main.c src/pacrunner.h \
-@@ -76,6 +77,11 @@ src_pacrunner_SOURCES = $(gdbus_sources) $(builtin_sources) $(js_sources) \
+@@ -75,6 +76,11 @@ src_pacrunner_SOURCES = $(gdbus_sources) $(builtin_sources) $(js_sources) \
  			src/client.c src/manager.c src/proxy.c \
  			src/manual.c src/js.h src/js.c
  
@@ -55,7 +61,7 @@ index e520416..31a2296 100644
  src_pacrunner_LDADD = $(builtin_libadd) @GLIB_LIBS@ @PTHREAD_LIBS@ \
  							@DBUS_LIBS@ -ldl
  
-@@ -183,6 +189,9 @@ CLEANFILES = src/builtin.h
+@@ -182,6 +188,9 @@ CLEANFILES = src/builtin.h
  
  EXTRA_DIST = src/genbuiltin src/pacrunner.conf $(test_scripts) \
  			src/pacrunner.service \
@@ -66,7 +72,7 @@ index e520416..31a2296 100644
  			doc/manager-api.txt doc/client-api.txt \
  			doc/manual-configuration.txt
 diff --git a/configure.ac b/configure.ac
-index 1577c86..d09aa7e 100644
+index 01f7d7a..961876c 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -92,6 +92,8 @@ if (test "${enable_v8}" = "yes"); then
@@ -80,10 +86,10 @@ index 1577c86..d09aa7e 100644
  AC_SUBST(GLIB_CFLAGS)
 diff --git a/src/discovery.c b/src/discovery.c
 new file mode 100644
-index 0000000..987a3d1
+index 0000000..8878ece
 --- /dev/null
 +++ b/src/discovery.c
-@@ -0,0 +1,201 @@
+@@ -0,0 +1,287 @@
 +/*
 + * PAC file discovery service
 + *
@@ -115,6 +121,7 @@ index 0000000..987a3d1
 +#include <signal.h>
 +#include <stdio.h>
 +#include <stdlib.h>
++#include <stdbool.h>
 +#include <sys/socket.h>
 +#include <sys/stat.h>
 +#include <sys/types.h>
@@ -131,6 +138,10 @@ index 0000000..987a3d1
 +#endif
 +
 +#include <systemd/sd-bus.h>
++#include <systemd/sd-event.h>
++
++static sd_event *event = NULL;
++static sd_bus *system_bus = NULL;
 +
 +char *resolve(char *str)
 +{
@@ -140,10 +151,10 @@ index 0000000..987a3d1
 +        int err;
 +
 +        if (setenv("LC_ALL", "C", 1))
-+            perror("Cannot set LC_ALL to C");
++                perror("Cannot set LC_ALL to C");
 +
 +        memset(&hints, 0, sizeof(struct addrinfo));
-+        hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
++        hints.ai_family = AF_INET;      /* IETF draft only required IPv4 */
 +        hints.ai_socktype = SOCK_DGRAM; /* Datagram socket */
 +        hints.ai_flags = 0;
 +        hints.ai_protocol = 0;          /* Any protocol */
@@ -155,33 +166,25 @@ index 0000000..987a3d1
 +
 +        err = getnameinfo(info->ai_addr, info->ai_addrlen,
 +                          addr, 65, NULL, 0, 0);
++        freeaddrinfo(info);
 +        if (err < 0) {
 +                fprintf(stderr, "failed getnameinfo: %s\n", gai_strerror(err));
-+                freeaddrinfo(info);
 +                return NULL;
 +        }
 +
-+        freeaddrinfo(info);
 +        return strdup(addr);
 +}
 +
 +int send_to_pacrunner(char *host)
 +{
-+        sd_bus *system_bus = NULL;
 +        sd_bus_error errstr = SD_BUS_ERROR_NULL;
 +        sd_bus_message *obj = NULL;
 +        char *configstr, *url;
 +        int ret = -1;
 +
-+        if ((ret = sd_bus_open_system(&system_bus)) < 0) {
-+                fprintf(stderr, "Cannot connect to system bus: %s\n",
-+                        strerror(-ret));
-+                goto bail;
-+        }
-+
 +        // FIXME: need to support HTTPS URLs?
 +        if (asprintf(&url, "http://%s/wpad.dat", host) < 0) {
-+                goto bail;
++                return -1;
 +        }
 +
 +        fprintf(stderr, "PAC url: %s\n", url);
@@ -212,6 +215,9 @@ index 0000000..987a3d1
 +
 +        ret = 0;
 +bail:
++        sd_bus_error_free(&errstr);
++        sd_bus_message_unref(obj);
++        free(url);
 +        return ret;
 +
 +}
@@ -241,12 +247,67 @@ index 0000000..987a3d1
 +{
 +        /* state file may not have been created yet, so ignore errors */
 +        unlink(state_file);
-+        _exit(0);
++        sd_event_exit(event, 0);
++}
++
++static int pacrunner_setup(void)
++{
++        char *domain = NULL;
++        int loop = 1;
++
++        /* don't give up too easily to resolve the wpad address */
++        for (;;) {
++                if ((domain = resolve("wpad")) != NULL) {
++                        break;
++                }
++
++                usleep(loop * 100000);
++
++                loop *= 2;
++                if (loop <= 32) {
++                        free(domain);
++                        continue;
++                }
++
++                fprintf(stderr, "Unable to find wpad host\n");
++                return 2;
++        }
++
++        if (send_to_pacrunner(domain) < 0) {
++                free(domain);
++                return 1;
++        }
++
++        free(domain);
++        return 0;
++}
++
++static int match_callback(sd_bus_message *m, void *userdata, sd_bus_error *ret_error)
++{
++        const char *s1, *s2, *s3; /* name, old_owner, new_owner */
++        int ret;
++
++        ret = sd_bus_message_read(m, "sss", &s1, &s2, &s3);
++        if (ret < 0) {
++                fprintf(stderr, "sd_bus_message_read: %s\n", strerror(-ret));
++                exit(EXIT_FAILURE);
++        }
++
++        if (strcmp(s1, "org.pacrunner") != 0) {
++                return 0;
++        }
++
++        if (strlen(s3) > 0) {
++                /* request main event loop to exit */
++                pacrunner_setup();
++        } else if (strlen(s2) > 0) {
++                /* pacrunner exited, wait a while and restart it */
++        }
++        return 0;
 +}
 +
 +int main(void)
 +{
-+        char *domain = NULL;
 +        int ret = 0;
 +        struct sigaction sa;
 +
@@ -256,15 +317,37 @@ index 0000000..987a3d1
 +        sigaction(SIGINT, &sa, NULL);
 +        sigaction(SIGTERM, &sa, NULL);
 +
-+        if ((domain = resolve("wpad")) == NULL) {
-+                fprintf(stderr, "Unable to find wpad host\n");
-+                ret = 2;
++        /* connect to the system bus */
++        ret = sd_bus_default_system(&system_bus);
++        if (ret < 0) {
++                fprintf(stderr, "Cannot connect to system bus: %s\n", strerror(-ret));
++                exit(EXIT_SUCCESS);
++        }
++
++        /* register to name owner changes in case pacrunner restarts */
++        ret = sd_bus_add_match(system_bus,
++                             NULL,
++                             "type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged'",
++                             match_callback,
++                             NULL);
++        if (ret < 0) {
++                fprintf(stderr, "Failed to add bus match\n");
++                ret = 3;
 +                goto out;
 +        }
 +
-+        if (send_to_pacrunner(domain) < 0) {
-+                ret = 1;
-+                goto out;
++        /* create eventfd */
++        ret = sd_event_default(&event);
++        if (ret < 0) {
++                fprintf(stderr, "Failed to allocate event loop\n");
++                exit(EXIT_FAILURE);
++        }
++
++        /* and connect the bus so bus callbacks are processed */
++        ret = sd_bus_attach_event(system_bus, event, SD_EVENT_PRIORITY_NORMAL);
++        if (ret < 0) {
++                fprintf(stderr, "Failed to attach event\n");
++                exit(EXIT_FAILURE);
 +        }
 +
 +        if (create_state_file() < 0) {
@@ -272,15 +355,24 @@ index 0000000..987a3d1
 +                goto out;
 +        }
 +
-+        // FIXME: add inotify() watch to detect network state changes; for now,
-+        // just sleep forever.
++        /* initial setup - once manually */
++        pacrunner_setup();
++
 +        malloc_trim(0);
-+        pause();
++
++        ret = sd_event_loop(event);
++        if (ret < 0) {
++                fprintf(stderr, "Failed event loop: %s\n", strerror(-ret));
++                ret = 2;
++                goto out;
++        }
++
 +out:
++        sd_bus_unref(system_bus);
++        sd_event_unref(event);
 +        if (state_fd >= 0) {
 +                close(state_fd);
 +        }
-+        free(domain);
 +        return ret;
 +}
 +
@@ -325,5 +417,5 @@ index 0000000..c2c35d5
 +[Install]
 +WantedBy=multi-user.target
 -- 
-2.13.3
+2.16.2
 
