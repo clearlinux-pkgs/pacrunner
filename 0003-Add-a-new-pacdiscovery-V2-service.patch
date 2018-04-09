@@ -1,7 +1,7 @@
-From 874c2b04b995f44608db9e89dbc1255963a73a48 Mon Sep 17 00:00:00 2001
+From 5e349528423143f7318d12160679dc3831cd27c8 Mon Sep 17 00:00:00 2001
 From: Patrick McCarty <patrick.mccarty@intel.com>
 Date: Mon, 24 Jul 2017 16:52:56 -0700
-Subject: [PATCH 3/5] Add a new 'pacdiscovery' (V2) service
+Subject: [PATCH 3/6] Add a new 'pacdiscovery' (V2) service
 
 On the Clear Linux OS for Intel Architecture, systemd-networkd is the
 default network manager. Since it does not talk to pacrunner, we have
@@ -25,7 +25,7 @@ Signed-off-by: Patrick McCarty <patrick.mccarty@intel.com>
 ---
  Makefile.am              |  11 +-
  configure.ac             |   2 +
- src/discovery.c          | 287 +++++++++++++++++++++++++++++++++++++++++++++++
+ src/discovery.c          | 287 +++++++++++++++++++++++++++++++++++++++
  src/pacdiscovery.conf    |   1 +
  src/pacdiscovery.path    |   8 ++
  src/pacdiscovery.service |  12 ++
@@ -417,5 +417,5 @@ index 0000000..c2c35d5
 +[Install]
 +WantedBy=multi-user.target
 -- 
-2.16.2
+2.17.0
 

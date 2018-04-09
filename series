@@ -1,5 +1,6 @@
 0001-Update-pacrunner-dbus-config.patch
 0002-Add-initial-systemd-service-file.patch
-0003-Add-a-new-pacdiscovery-service.patch
+0003-Add-a-new-pacdiscovery-V2-service.patch
 0004-Use-trimmed-down-glibc-C-locale.patch
 0005-Add-port-stripping-for-FindProxyForURL.patch
+0006-Don-t-print-out-pointers-for-no-reason.patch

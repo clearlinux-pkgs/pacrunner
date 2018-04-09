@@ -1,13 +1,13 @@
-From 536a4030a5bfd6c2201b4cded227efd24683feb8 Mon Sep 17 00:00:00 2001
+From b9fc5424a0a8a04339880997753e230e0d851270 Mon Sep 17 00:00:00 2001
 From: "Brad T. Peters" <brad.t.peters@intel.com>
 Date: Thu, 4 Feb 2016 10:16:13 -0800
-Subject: [PATCH 5/5] Add port stripping for FindProxyForURL
+Subject: [PATCH 5/6] Add port stripping for FindProxyForURL
 
 When port is included in url for proxy lookup, jsengine is
 not parsing the proxy script properly. This patch strips port
 details from url and host pairs for this function only
 
-V2: 
+V2:
 
 Since upstream contains a duktape plugin in-tree now, I've adapted this
 patch to apply to duktape_execute in duktape.c instead of
@@ -15,7 +15,6 @@ jsengine_execute in the old jsengine.c.
 
 Signed-off-by: Tudor Marcu <tudor.marcu@intel.com>
 Signed-off-by: Patrick McCarty <patrick.mccarty@intel.com>
-
 ---
  plugins/duktape.c | 40 ++++++++++++++++++++++++++++++++++++++--
  1 file changed, 38 insertions(+), 2 deletions(-)
@@ -90,5 +89,5 @@ index a8a93bc..0d54e72 100644
  
  	return result;
 -- 
-2.16.2
+2.17.0
 

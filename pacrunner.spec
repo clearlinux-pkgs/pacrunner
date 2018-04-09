@@ -4,7 +4,7 @@
 #
 Name     : pacrunner
 Version  : 0.13
-Release  : 39
+Release  : 40
 URL      : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.13.tar.xz
 Source0  : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.13.tar.xz
 Summary  : Proxy Configuration Library
@@ -22,9 +22,10 @@ BuildRequires : pkgconfig(libcurl)
 BuildRequires : pkgconfig(libsystemd)
 Patch1: 0001-Update-pacrunner-dbus-config.patch
 Patch2: 0002-Add-initial-systemd-service-file.patch
-Patch3: 0003-Add-a-new-pacdiscovery-service.patch
+Patch3: 0003-Add-a-new-pacdiscovery-V2-service.patch
 Patch4: 0004-Use-trimmed-down-glibc-C-locale.patch
 Patch5: 0005-Add-port-stripping-for-FindProxyForURL.patch
+Patch6: 0006-Don-t-print-out-pointers-for-no-reason.patch
 
 %description
 PACrunner - Proxy configuration daemon
@@ -94,13 +95,14 @@ lib components for the pacrunner package.
 %patch3 -p1
 %patch4 -p1
 %patch5 -p1
+%patch6 -p1
 
 %build
 export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C
-export SOURCE_DATE_EPOCH=1521045301
+export SOURCE_DATE_EPOCH=1523299142
 %reconfigure --disable-static --enable-duktape \
 --disable-mozjs \
 --enable-curl \
@@ -116,7 +118,7 @@ export no_proxy=localhost,127.0.0.1,0.0.0.0
 make VERBOSE=1 V=1 %{?_smp_mflags} check
 
 %install
-export SOURCE_DATE_EPOCH=1521045301
+export SOURCE_DATE_EPOCH=1523299142
 rm -rf %{buildroot}
 %make_install
 ## make_install_append content
