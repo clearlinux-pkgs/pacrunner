@@ -1,0 +1,43 @@
+From bedd69f10ca28b118e39ce8146cd7870cbbdd4e6 Mon Sep 17 00:00:00 2001
+From: Auke Kok <auke-jan.h.kok@intel.com>
+Date: Tue, 22 Jan 2019 14:28:10 -0800
+Subject: [PATCH] Write out wpad.dat to /run/pacrunner/wpad.dat.
+
+---
+ src/proxy.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/src/proxy.c b/src/proxy.c
+index e233e1d..7bfeec1 100644
+--- a/src/proxy.c
++++ b/src/proxy.c
+@@ -31,6 +31,8 @@
+ 
+ #include "pacrunner.h"
+ 
++#define WPAD_STORE_PATH "/run/pacrunner/wpad.dat"
++
+ struct pacrunner_proxy {
+ 	gint refcount;
+ 
+@@ -112,6 +114,8 @@ static void reset_proxy(struct pacrunner_proxy *proxy)
+ 	g_free(proxy->script);
+ 	proxy->script = NULL;
+ 
++	unlink(WPAD_STORE_PATH);
++
+ 	__pacrunner_manual_destroy_servers(proxy->servers);
+ 	proxy->servers = NULL;
+ 
+@@ -336,6 +340,8 @@ static void download_callback(char *content, void *user_data)
+ 	g_free(proxy->script);
+ 	proxy->script = content;
+ 
++	g_file_set_contents(WPAD_STORE_PATH, content, -1, NULL);
++
+ 	pacrunner_proxy_enable(proxy);
+ 
+ done:
+-- 
+2.20.0
+

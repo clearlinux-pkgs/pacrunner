@@ -4,3 +4,4 @@
 0004-Use-trimmed-down-glibc-C-locale.patch
 0005-Add-port-stripping-for-FindProxyForURL.patch
 0006-Don-t-print-out-pointers-for-no-reason.patch
+0007-Write-out-wpad.dat-to-run-wpad-wpad.dat.patch

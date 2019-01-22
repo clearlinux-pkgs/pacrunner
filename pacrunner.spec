@@ -4,18 +4,19 @@
 #
 Name     : pacrunner
 Version  : 0.15
-Release  : 44
+Release  : 46
 URL      : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.15.tar.xz
 Source0  : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.15.tar.xz
 Summary  : Proxy Configuration Library
 Group    : Development/Tools
 License  : GPL-2.0 LGPL-2.1
-Requires: pacrunner-bin
-Requires: pacrunner-autostart
-Requires: pacrunner-config
-Requires: pacrunner-lib
-Requires: pacrunner-data
-Requires: pacrunner-license
+Requires: pacrunner-autostart = %{version}-%{release}
+Requires: pacrunner-bin = %{version}-%{release}
+Requires: pacrunner-config = %{version}-%{release}
+Requires: pacrunner-data = %{version}-%{release}
+Requires: pacrunner-lib = %{version}-%{release}
+Requires: pacrunner-license = %{version}-%{release}
+Requires: pacrunner-services = %{version}-%{release}
 BuildRequires : flex-dev
 BuildRequires : pkgconfig(dbus-1)
 BuildRequires : pkgconfig(glib-2.0)
@@ -27,6 +28,7 @@ Patch3: 0003-Add-a-new-pacdiscovery-V2-service.patch
 Patch4: 0004-Use-trimmed-down-glibc-C-locale.patch
 Patch5: 0005-Add-port-stripping-for-FindProxyForURL.patch
 Patch6: 0006-Don-t-print-out-pointers-for-no-reason.patch
+Patch7: 0007-Write-out-wpad.dat-to-run-wpad-wpad.dat.patch
 
 %description
 PACrunner - Proxy configuration daemon
@@ -48,6 +50,7 @@ Group: Binaries
 Requires: pacrunner-data = %{version}-%{release}
 Requires: pacrunner-config = %{version}-%{release}
 Requires: pacrunner-license = %{version}-%{release}
+Requires: pacrunner-services = %{version}-%{release}
 
 %description bin
 bin components for the pacrunner package.
@@ -99,6 +102,14 @@ Group: Default
 license components for the pacrunner package.
 
 
+%package services
+Summary: services components for the pacrunner package.
+Group: Systemd services
+
+%description services
+services components for the pacrunner package.
+
+
 %prep
 %setup -q -n pacrunner-0.15
 %patch1 -p1
@@ -107,13 +118,14 @@ license components for the pacrunner package.
 %patch4 -p1
 %patch5 -p1
 %patch6 -p1
+%patch7 -p1
 
 %build
 export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C
-export SOURCE_DATE_EPOCH=1538062165
+export SOURCE_DATE_EPOCH=1548266636
 %reconfigure --disable-static --enable-duktape \
 --disable-mozjs \
 --enable-curl \
@@ -129,11 +141,11 @@ export no_proxy=localhost,127.0.0.1,0.0.0.0
 make VERBOSE=1 V=1 %{?_smp_mflags} check
 
 %install
-export SOURCE_DATE_EPOCH=1538062165
+export SOURCE_DATE_EPOCH=1548266636
 rm -rf %{buildroot}
-mkdir -p %{buildroot}/usr/share/doc/pacrunner
-cp COPYING %{buildroot}/usr/share/doc/pacrunner/COPYING
-cp COPYING.LIB %{buildroot}/usr/share/doc/pacrunner/COPYING.LIB
+mkdir -p %{buildroot}/usr/share/package-licenses/pacrunner
+cp COPYING %{buildroot}/usr/share/package-licenses/pacrunner/COPYING
+cp COPYING.LIB %{buildroot}/usr/share/package-licenses/pacrunner/COPYING.LIB
 %make_install
 ## install_append content
 mkdir -p %{buildroot}/usr/lib/systemd/system
@@ -167,10 +179,6 @@ ln -sf /usr/lib/systemd/system/pacrunner.service %{buildroot}/usr/share/clr-serv
 
 %files config
 %defattr(-,root,root,-)
-%exclude /usr/lib/systemd/system/multi-user.target.wants/pacdiscovery.path
-/usr/lib/systemd/system/pacdiscovery.path
-/usr/lib/systemd/system/pacdiscovery.service
-/usr/lib/systemd/system/pacrunner.service
 /usr/lib/tmpfiles.d/pacdiscovery.conf
 
 %files data
@@ -193,5 +201,12 @@ ln -sf /usr/lib/systemd/system/pacrunner.service %{buildroot}/usr/share/clr-serv
 
 %files license
 %defattr(0644,root,root,0755)
-/usr/share/doc/pacrunner/COPYING
-/usr/share/doc/pacrunner/COPYING.LIB
+/usr/share/package-licenses/pacrunner/COPYING
+/usr/share/package-licenses/pacrunner/COPYING.LIB
+
+%files services
+%defattr(-,root,root,-)
+%exclude /usr/lib/systemd/system/multi-user.target.wants/pacdiscovery.path
+/usr/lib/systemd/system/pacdiscovery.path
+/usr/lib/systemd/system/pacdiscovery.service
+/usr/lib/systemd/system/pacrunner.service
