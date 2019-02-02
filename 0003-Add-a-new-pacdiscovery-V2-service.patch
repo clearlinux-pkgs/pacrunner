@@ -403,7 +403,7 @@ new file mode 100644
 index 0000000..c2c35d5
 --- /dev/null
 +++ b/src/pacdiscovery.service
-@@ -0,0 +1,12 @@
+@@ -0,0 +1,13 @@
 +[Unit]
 +Description=Proxy AutoConfig discovery service
 +Requires=systemd-resolved.service
@@ -411,6 +411,7 @@ index 0000000..c2c35d5
 +
 +[Service]
 +ExecStart=/usr/sbin/pacdiscovery
++RuntimeDirectory=pacrunner
 +SuccessExitStatus=2
 +User=pacrunner
 +

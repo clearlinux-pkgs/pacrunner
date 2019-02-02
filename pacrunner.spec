@@ -4,7 +4,7 @@
 #
 Name     : pacrunner
 Version  : 0.15
-Release  : 46
+Release  : 47
 URL      : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.15.tar.xz
 Source0  : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.15.tar.xz
 Summary  : Proxy Configuration Library
@@ -125,7 +125,7 @@ export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C
-export SOURCE_DATE_EPOCH=1548266636
+export SOURCE_DATE_EPOCH=1549127773
 %reconfigure --disable-static --enable-duktape \
 --disable-mozjs \
 --enable-curl \
@@ -141,7 +141,7 @@ export no_proxy=localhost,127.0.0.1,0.0.0.0
 make VERBOSE=1 V=1 %{?_smp_mflags} check
 
 %install
-export SOURCE_DATE_EPOCH=1548266636
+export SOURCE_DATE_EPOCH=1549127773
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/package-licenses/pacrunner
 cp COPYING %{buildroot}/usr/share/package-licenses/pacrunner/COPYING
