@@ -4,7 +4,7 @@
 #
 Name     : pacrunner
 Version  : 0.15
-Release  : 47
+Release  : 50
 URL      : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.15.tar.xz
 Source0  : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.15.tar.xz
 Summary  : Proxy Configuration Library
@@ -79,6 +79,7 @@ Requires: pacrunner-lib = %{version}-%{release}
 Requires: pacrunner-bin = %{version}-%{release}
 Requires: pacrunner-data = %{version}-%{release}
 Provides: pacrunner-devel = %{version}-%{release}
+Requires: pacrunner = %{version}-%{release}
 
 %description dev
 dev components for the pacrunner package.
@@ -125,7 +126,8 @@ export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C
-export SOURCE_DATE_EPOCH=1549127773
+export SOURCE_DATE_EPOCH=1557366342
+export LDFLAGS="${LDFLAGS} -fno-lto"
 %reconfigure --disable-static --enable-duktape \
 --disable-mozjs \
 --enable-curl \
@@ -141,7 +143,7 @@ export no_proxy=localhost,127.0.0.1,0.0.0.0
 make VERBOSE=1 V=1 %{?_smp_mflags} check
 
 %install
-export SOURCE_DATE_EPOCH=1549127773
+export SOURCE_DATE_EPOCH=1557366342
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/package-licenses/pacrunner
 cp COPYING %{buildroot}/usr/share/package-licenses/pacrunner/COPYING
@@ -161,6 +163,7 @@ install -m644 src/pacrunner.conf %{buildroot}/usr/share/dbus-1/system.d/
 mkdir -p %{buildroot}/usr/share/clr-service-restart
 ln -sf /usr/lib/systemd/system/pacdiscovery.service %{buildroot}/usr/share/clr-service-restart/pacdiscovery.service
 ln -sf /usr/lib/systemd/system/pacrunner.service %{buildroot}/usr/share/clr-service-restart/pacrunner.service
+rm -rf %{buildroot}/etc2
 ## install_append end
 
 %files

@@ -389,12 +389,13 @@ new file mode 100644
 index 0000000..793971c
 --- /dev/null
 +++ b/src/pacdiscovery.path
-@@ -0,0 +1,8 @@
+@@ -0,0 +1,9 @@
 +[Unit]
 +Description=Proxy AutoConfig discovery service (lease directory watch)
 +
 +[Path]
 +DirectoryNotEmpty=/run/systemd/netif/leases
++DirectoryNotEmpty=/run/NetworkManager/system-connections
 +
 +[Install]
 +WantedBy=multi-user.target
