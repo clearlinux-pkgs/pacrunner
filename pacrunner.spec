@@ -4,7 +4,7 @@
 #
 Name     : pacrunner
 Version  : 0.16
-Release  : 52
+Release  : 53
 URL      : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.16.tar.xz
 Source0  : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.16.tar.xz
 Summary  : Proxy Configuration Library
@@ -113,6 +113,7 @@ services components for the pacrunner package.
 
 %prep
 %setup -q -n pacrunner-0.16
+cd %{_builddir}/pacrunner-0.16
 %patch1 -p1
 %patch2 -p1
 %patch3 -p1
@@ -126,7 +127,7 @@ export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C.UTF-8
-export SOURCE_DATE_EPOCH=1564877850
+export SOURCE_DATE_EPOCH=1572465480
 export GCC_IGNORE_WERROR=1
 export CFLAGS="$CFLAGS -fno-lto "
 export FCFLAGS="$CFLAGS -fno-lto "
@@ -147,12 +148,17 @@ export no_proxy=localhost,127.0.0.1,0.0.0.0
 make VERBOSE=1 V=1 %{?_smp_mflags} check
 
 %install
-export SOURCE_DATE_EPOCH=1564877850
+export SOURCE_DATE_EPOCH=1572465480
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/package-licenses/pacrunner
-cp COPYING %{buildroot}/usr/share/package-licenses/pacrunner/COPYING
-cp COPYING.LIB %{buildroot}/usr/share/package-licenses/pacrunner/COPYING.LIB
+cp %{_builddir}/pacrunner-0.16/COPYING %{buildroot}/usr/share/package-licenses/pacrunner/a7a897a4bde987e597c04f16a9c28f6d3f57916d
+cp %{_builddir}/pacrunner-0.16/COPYING.LIB %{buildroot}/usr/share/package-licenses/pacrunner/32c7c5556c56cdbb2d507e27d28d081595a35a9b
 %make_install
+## service_restart content
+mkdir -p %{buildroot}/usr/share/clr-service-restart
+ln -s /usr/lib/systemd/system/pacdiscovery.service %{buildroot}/usr/share/clr-service-restart/pacdiscovery.service
+ln -s /usr/lib/systemd/system/pacrunner.service %{buildroot}/usr/share/clr-service-restart/pacrunner.service
+## service_restart end
 ## install_append content
 mkdir -p %{buildroot}/usr/lib/systemd/system
 install -m644 src/pacrunner.service %{buildroot}/usr/lib/systemd/system/
@@ -164,9 +170,6 @@ mkdir -p %{buildroot}/usr/lib/tmpfiles.d
 install -m644 src/pacdiscovery.conf %{buildroot}/usr/lib/tmpfiles.d/
 mkdir -p %{buildroot}/usr/share/dbus-1/system.d
 install -m644 src/pacrunner.conf %{buildroot}/usr/share/dbus-1/system.d/
-mkdir -p %{buildroot}/usr/share/clr-service-restart
-ln -sf /usr/lib/systemd/system/pacdiscovery.service %{buildroot}/usr/share/clr-service-restart/pacdiscovery.service
-ln -sf /usr/lib/systemd/system/pacrunner.service %{buildroot}/usr/share/clr-service-restart/pacrunner.service
 rm -rf %{buildroot}/etc2
 ## install_append end
 
@@ -197,7 +200,7 @@ rm -rf %{buildroot}/etc2
 
 %files dev
 %defattr(-,root,root,-)
-/usr/include/*.h
+/usr/include/proxy.h
 /usr/lib64/libproxy.so
 /usr/lib64/pkgconfig/libproxy-1.0.pc
 
@@ -208,8 +211,8 @@ rm -rf %{buildroot}/etc2
 
 %files license
 %defattr(0644,root,root,0755)
-/usr/share/package-licenses/pacrunner/COPYING
-/usr/share/package-licenses/pacrunner/COPYING.LIB
+/usr/share/package-licenses/pacrunner/32c7c5556c56cdbb2d507e27d28d081595a35a9b
+/usr/share/package-licenses/pacrunner/a7a897a4bde987e597c04f16a9c28f6d3f57916d
 
 %files services
 %defattr(-,root,root,-)

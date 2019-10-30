@@ -1,0 +1,2 @@
+/usr/lib/systemd/system/pacdiscovery.service
+/usr/lib/systemd/system/pacrunner.service
