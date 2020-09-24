@@ -4,7 +4,7 @@
 #
 Name     : pacrunner
 Version  : 0.17
-Release  : 54
+Release  : 55
 URL      : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.17.tar.xz
 Source0  : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.17.tar.xz
 Summary  : Proxy Configuration Library
