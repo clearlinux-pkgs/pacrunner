@@ -1,7 +1,7 @@
-From 9bce41349d6755b82df1b757bb4362c96c8f9572 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Patrick McCarty <patrick.mccarty@intel.com>
 Date: Wed, 7 Oct 2015 21:07:49 -0700
-Subject: [PATCH 2/6] Add initial systemd service file
+Subject: [PATCH] Add initial systemd service file
 
 Should probably make a template .in file for this one as well, similar
 to the DBus service.
@@ -14,10 +14,10 @@ Signed-off-by: Patrick McCarty <patrick.mccarty@intel.com>
  create mode 100644 src/pacrunner.service
 
 diff --git a/Makefile.am b/Makefile.am
-index 2b99595..452ba0a 100644
+index 819abab..451eaea 100644
 --- a/Makefile.am
 +++ b/Makefile.am
-@@ -181,6 +181,7 @@ endif
+@@ -140,6 +140,7 @@ endif
  CLEANFILES = src/builtin.h
  
  EXTRA_DIST = src/genbuiltin src/pacrunner.conf $(test_scripts) \
@@ -40,6 +40,3 @@ index 0000000..6445215
 +
 +[Install]
 +WantedBy=multi-user.target
--- 
-2.17.0
-

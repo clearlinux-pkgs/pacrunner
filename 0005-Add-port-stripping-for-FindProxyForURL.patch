@@ -1,7 +1,7 @@
-From b9fc5424a0a8a04339880997753e230e0d851270 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: "Brad T. Peters" <brad.t.peters@intel.com>
 Date: Thu, 4 Feb 2016 10:16:13 -0800
-Subject: [PATCH 5/6] Add port stripping for FindProxyForURL
+Subject: [PATCH] Add port stripping for FindProxyForURL
 
 When port is included in url for proxy lookup, jsengine is
 not parsing the proxy script properly. This patch strips port
@@ -88,6 +88,3 @@ index a8a93bc..0d54e72 100644
  	pthread_mutex_unlock(&ctx->lock);
  
  	return result;
--- 
-2.17.0
-

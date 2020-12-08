@@ -1,4 +1,4 @@
-From bedd69f10ca28b118e39ce8146cd7870cbbdd4e6 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Auke Kok <auke-jan.h.kok@intel.com>
 Date: Tue, 22 Jan 2019 14:28:10 -0800
 Subject: [PATCH] Write out wpad.dat to /run/pacrunner/wpad.dat.
@@ -38,6 +38,3 @@ index e233e1d..7bfeec1 100644
  	pacrunner_proxy_enable(proxy);
  
  done:
--- 
-2.20.0
-

@@ -1,7 +1,7 @@
-From b830f6b2bfb3ecd407947de060d59def641997d1 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Auke Kok <auke-jan.h.kok@intel.com>
 Date: Mon, 9 Apr 2018 11:35:20 -0700
-Subject: [PATCH 6/6] Don't print out pointers for no reason.
+Subject: [PATCH] Don't print out pointers for no reason.
 
 ---
  plugins/duktape.c | 1 -
@@ -19,6 +19,3 @@ index 0d54e72..95caef8 100644
  	return 0;
  }
  
--- 
-2.17.0
-

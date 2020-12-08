@@ -1,7 +1,7 @@
-From 5e349528423143f7318d12160679dc3831cd27c8 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Patrick McCarty <patrick.mccarty@intel.com>
 Date: Mon, 24 Jul 2017 16:52:56 -0700
-Subject: [PATCH 3/6] Add a new 'pacdiscovery' (V2) service
+Subject: [PATCH] Add a new 'pacdiscovery' (V2) service
 
 On the Clear Linux OS for Intel Architecture, systemd-networkd is the
 default network manager. Since it does not talk to pacrunner, we have
@@ -27,19 +27,19 @@ Signed-off-by: Patrick McCarty <patrick.mccarty@intel.com>
  configure.ac             |   2 +
  src/discovery.c          | 287 +++++++++++++++++++++++++++++++++++++++
  src/pacdiscovery.conf    |   1 +
- src/pacdiscovery.path    |   8 ++
- src/pacdiscovery.service |  12 ++
- 6 files changed, 320 insertions(+), 1 deletion(-)
+ src/pacdiscovery.path    |   9 ++
+ src/pacdiscovery.service |  13 ++
+ 6 files changed, 322 insertions(+), 1 deletion(-)
  create mode 100644 src/discovery.c
  create mode 100644 src/pacdiscovery.conf
  create mode 100644 src/pacdiscovery.path
  create mode 100644 src/pacdiscovery.service
 
 diff --git a/Makefile.am b/Makefile.am
-index 452ba0a..9a87c22 100644
+index 451eaea..3f673ba 100644
 --- a/Makefile.am
 +++ b/Makefile.am
-@@ -66,7 +66,8 @@ endif
+@@ -43,7 +43,8 @@ endif
  
  duktape_libduktape_a_SHORTNAME = libduktape
  
@@ -49,7 +49,7 @@ index 452ba0a..9a87c22 100644
  
  src_pacrunner_SOURCES = $(gdbus_sources) $(builtin_sources) $(js_sources) \
  			src/main.c src/pacrunner.h \
-@@ -75,6 +76,11 @@ src_pacrunner_SOURCES = $(gdbus_sources) $(builtin_sources) $(js_sources) \
+@@ -52,6 +53,11 @@ src_pacrunner_SOURCES = $(gdbus_sources) $(builtin_sources) $(js_sources) \
  			src/client.c src/manager.c src/proxy.c \
  			src/manual.c src/js.h src/js.c
  
@@ -61,7 +61,7 @@ index 452ba0a..9a87c22 100644
  src_pacrunner_LDADD = $(builtin_libadd) @GLIB_LIBS@ @PTHREAD_LIBS@ \
  							@DBUS_LIBS@ -ldl
  
-@@ -182,6 +188,9 @@ CLEANFILES = src/builtin.h
+@@ -141,6 +147,9 @@ CLEANFILES = src/builtin.h
  
  EXTRA_DIST = src/genbuiltin src/pacrunner.conf $(test_scripts) \
  			src/pacrunner.service \
@@ -72,12 +72,12 @@ index 452ba0a..9a87c22 100644
  			doc/manager-api.txt doc/client-api.txt \
  			doc/manual-configuration.txt
 diff --git a/configure.ac b/configure.ac
-index 01f7d7a..961876c 100644
+index 95e2545..c7c112c 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -92,6 +92,8 @@ if (test "${enable_v8}" = "yes"); then
- fi
- AM_CONDITIONAL(V8, test "${enable_v8}" = "yes")
+@@ -72,6 +72,8 @@ AC_ARG_ENABLE(duktape, AC_HELP_STRING([--enable-duktape],
+ 		[enable Duktape Javascript plugin support]))
+ AM_CONDITIONAL(DUKTAPE, test "${enable_duktape}" = "yes")
  
 +PKG_CHECK_MODULES([SYSTEMD_BUS],[libsystemd >= 221])
 +
@@ -386,7 +386,7 @@ index 0000000..1caf5bc
 +d /run/pacrunner 0755 pacrunner pacrunner
 diff --git a/src/pacdiscovery.path b/src/pacdiscovery.path
 new file mode 100644
-index 0000000..793971c
+index 0000000..98709ef
 --- /dev/null
 +++ b/src/pacdiscovery.path
 @@ -0,0 +1,9 @@
@@ -401,7 +401,7 @@ index 0000000..793971c
 +WantedBy=multi-user.target
 diff --git a/src/pacdiscovery.service b/src/pacdiscovery.service
 new file mode 100644
-index 0000000..c2c35d5
+index 0000000..7a64146
 --- /dev/null
 +++ b/src/pacdiscovery.service
 @@ -0,0 +1,13 @@
@@ -418,6 +418,3 @@ index 0000000..c2c35d5
 +
 +[Install]
 +WantedBy=multi-user.target
--- 
-2.17.0
-

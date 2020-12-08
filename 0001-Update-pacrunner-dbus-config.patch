@@ -1,7 +1,7 @@
-From b174fa91ba067848451be4e91dd25e1f1701afae Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tudor Marcu <tudor.marcu@intel.com>
 Date: Wed, 7 Oct 2015 16:37:53 -0700
-Subject: [PATCH 1/6] Update pacrunner dbus config
+Subject: [PATCH] Update pacrunner dbus config
 
 Pacrunner will not run as root, and should use the created pacrunner user. This
 is also a bus-activatable service, and should describe the corresponding systemd
@@ -38,6 +38,3 @@ index 9028261..843f8a5 100644
          <allow own="org.pacrunner"/>
          <allow send_destination="org.pacrunner"/>
      </policy>
--- 
-2.17.0
-
