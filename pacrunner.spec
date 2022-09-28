@@ -4,7 +4,7 @@
 #
 Name     : pacrunner
 Version  : 0.19
-Release  : 58
+Release  : 59
 URL      : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.19.tar.xz
 Source0  : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.19.tar.xz
 Summary  : Proxy Configuration Library
@@ -14,7 +14,6 @@ Requires: pacrunner-autostart = %{version}-%{release}
 Requires: pacrunner-bin = %{version}-%{release}
 Requires: pacrunner-config = %{version}-%{release}
 Requires: pacrunner-data = %{version}-%{release}
-Requires: pacrunner-lib = %{version}-%{release}
 Requires: pacrunner-license = %{version}-%{release}
 Requires: pacrunner-services = %{version}-%{release}
 BuildRequires : flex-dev
@@ -72,29 +71,6 @@ Group: Data
 data components for the pacrunner package.
 
 
-%package dev
-Summary: dev components for the pacrunner package.
-Group: Development
-Requires: pacrunner-lib = %{version}-%{release}
-Requires: pacrunner-bin = %{version}-%{release}
-Requires: pacrunner-data = %{version}-%{release}
-Provides: pacrunner-devel = %{version}-%{release}
-Requires: pacrunner = %{version}-%{release}
-
-%description dev
-dev components for the pacrunner package.
-
-
-%package lib
-Summary: lib components for the pacrunner package.
-Group: Libraries
-Requires: pacrunner-data = %{version}-%{release}
-Requires: pacrunner-license = %{version}-%{release}
-
-%description lib
-lib components for the pacrunner package.
-
-
 %package license
 Summary: license components for the pacrunner package.
 Group: Default
@@ -127,7 +103,7 @@ export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C.UTF-8
-export SOURCE_DATE_EPOCH=1655210708
+export SOURCE_DATE_EPOCH=1664404594
 export GCC_IGNORE_WERROR=1
 export CFLAGS="$CFLAGS -fno-lto "
 export FCFLAGS="$FFLAGS -fno-lto "
@@ -137,7 +113,7 @@ export CXXFLAGS="$CXXFLAGS -fno-lto "
 --disable-mozjs \
 --enable-curl \
 --enable-debug \
---enable-libproxy
+--disable-libproxy
 make  %{?_smp_mflags}
 
 %check
@@ -148,11 +124,11 @@ export no_proxy=localhost,127.0.0.1,0.0.0.0
 make %{?_smp_mflags} check
 
 %install
-export SOURCE_DATE_EPOCH=1655210708
+export SOURCE_DATE_EPOCH=1664404594
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/package-licenses/pacrunner
-cp %{_builddir}/pacrunner-0.19/COPYING %{buildroot}/usr/share/package-licenses/pacrunner/a7a897a4bde987e597c04f16a9c28f6d3f57916d
-cp %{_builddir}/pacrunner-0.19/COPYING.LIB %{buildroot}/usr/share/package-licenses/pacrunner/32c7c5556c56cdbb2d507e27d28d081595a35a9b
+cp %{_builddir}/pacrunner-%{version}/COPYING %{buildroot}/usr/share/package-licenses/pacrunner/a7a897a4bde987e597c04f16a9c28f6d3f57916d
+cp %{_builddir}/pacrunner-%{version}/COPYING.LIB %{buildroot}/usr/share/package-licenses/pacrunner/32c7c5556c56cdbb2d507e27d28d081595a35a9b
 %make_install
 ## service_restart content
 mkdir -p %{buildroot}/usr/share/clr-service-restart
@@ -183,10 +159,8 @@ rm -rf %{buildroot}/etc2
 
 %files bin
 %defattr(-,root,root,-)
-/usr/bin/manual-proxy-test
 /usr/bin/pacdiscovery
 /usr/bin/pacrunner
-/usr/bin/proxy
 
 %files config
 %defattr(-,root,root,-)
@@ -198,17 +172,6 @@ rm -rf %{buildroot}/etc2
 /usr/share/clr-service-restart/pacrunner.service
 /usr/share/dbus-1/system-services/org.pacrunner.service
 /usr/share/dbus-1/system.d/pacrunner.conf
-
-%files dev
-%defattr(-,root,root,-)
-/usr/include/proxy.h
-/usr/lib64/libproxy.so
-/usr/lib64/pkgconfig/libproxy-1.0.pc
-
-%files lib
-%defattr(-,root,root,-)
-/usr/lib64/libproxy.so.1
-/usr/lib64/libproxy.so.1.0.0
 
 %files license
 %defattr(0644,root,root,0755)

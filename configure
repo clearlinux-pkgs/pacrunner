@@ -2,4 +2,4 @@
 --disable-mozjs
 --enable-curl
 --enable-debug
---enable-libproxy
+--disable-libproxy
