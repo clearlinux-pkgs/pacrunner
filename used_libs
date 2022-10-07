@@ -1,5 +1,5 @@
 libc.so.6
-libcurl.so.4
+libcurlmini.so.4
 libdbus-1.so.3
 libglib-2.0.so.0
 libm.so.6

@@ -4,7 +4,7 @@
 #
 Name     : pacrunner
 Version  : 0.19
-Release  : 60
+Release  : 61
 URL      : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.19.tar.xz
 Source0  : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.19.tar.xz
 Summary  : Proxy Configuration Library
@@ -16,6 +16,7 @@ Requires: pacrunner-config = %{version}-%{release}
 Requires: pacrunner-data = %{version}-%{release}
 Requires: pacrunner-license = %{version}-%{release}
 Requires: pacrunner-services = %{version}-%{release}
+BuildRequires : curl-mini-dev
 BuildRequires : flex-dev
 BuildRequires : pkgconfig(dbus-1)
 BuildRequires : pkgconfig(glib-2.0)
@@ -28,6 +29,7 @@ Patch4: 0004-Use-trimmed-down-glibc-C-locale.patch
 Patch5: 0005-Add-port-stripping-for-FindProxyForURL.patch
 Patch6: 0006-Don-t-print-out-pointers-for-no-reason.patch
 Patch7: 0007-Write-out-wpad.dat-to-run-pacrunner-wpad.dat.patch
+Patch8: libcurlmini.patch
 
 %description
 PACrunner - Proxy configuration daemon
@@ -97,13 +99,14 @@ cd %{_builddir}/pacrunner-0.19
 %patch5 -p1
 %patch6 -p1
 %patch7 -p1
+%patch8 -p1
 
 %build
 export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C.UTF-8
-export SOURCE_DATE_EPOCH=1664404594
+export SOURCE_DATE_EPOCH=1665154318
 export GCC_IGNORE_WERROR=1
 export CFLAGS="$CFLAGS -fno-lto "
 export FCFLAGS="$FFLAGS -fno-lto "
@@ -124,11 +127,11 @@ export no_proxy=localhost,127.0.0.1,0.0.0.0
 make %{?_smp_mflags} check
 
 %install
-export SOURCE_DATE_EPOCH=1664404594
+export SOURCE_DATE_EPOCH=1665154318
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/package-licenses/pacrunner
-cp %{_builddir}/pacrunner-%{version}/COPYING %{buildroot}/usr/share/package-licenses/pacrunner/a7a897a4bde987e597c04f16a9c28f6d3f57916d
-cp %{_builddir}/pacrunner-%{version}/COPYING.LIB %{buildroot}/usr/share/package-licenses/pacrunner/32c7c5556c56cdbb2d507e27d28d081595a35a9b
+cp %{_builddir}/pacrunner-%{version}/COPYING %{buildroot}/usr/share/package-licenses/pacrunner/a7a897a4bde987e597c04f16a9c28f6d3f57916d || :
+cp %{_builddir}/pacrunner-%{version}/COPYING.LIB %{buildroot}/usr/share/package-licenses/pacrunner/32c7c5556c56cdbb2d507e27d28d081595a35a9b || :
 %make_install
 ## service_restart content
 mkdir -p %{buildroot}/usr/share/clr-service-restart
