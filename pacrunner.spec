@@ -5,7 +5,7 @@
 #
 Name     : pacrunner
 Version  : 0.19
-Release  : 62
+Release  : 63
 URL      : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.19.tar.xz
 Source0  : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.19.tar.xz
 Summary  : Proxy Configuration Library
