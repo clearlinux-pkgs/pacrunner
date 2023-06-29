@@ -5,4 +5,3 @@
 0005-Add-port-stripping-for-FindProxyForURL.patch
 0006-Don-t-print-out-pointers-for-no-reason.patch
 0007-Write-out-wpad.dat-to-run-pacrunner-wpad.dat.patch
-libcurlmini.patch
