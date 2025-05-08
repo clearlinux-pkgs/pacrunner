@@ -1,0 +1,207 @@
+From db2140a2efb26bb416f0c44b27f2d9cc893ae26f Mon Sep 17 00:00:00 2001
+From: "Brett T. Warden" <brett.t.warden@intel.com>
+Date: Wed, 7 May 2025 16:38:58 -0700
+Subject: [PATCH] Make pacdiscovery catch network changes
+
+Subscribe to DBUS notifications that suggest a network change has
+occurred, and redetect WPAD scripts if so. Track the last configuration
+we successfully registered with pacrunner and feed it to
+DestroyProxyConfiguration before we send a new one. Track the last wpad
+host detected (or NULL) to determine whether we actually need to send a
+new configuration -- keeps us from swamping pacrunner when we receive
+multiple events about the same network change, and triggering a race
+condition while it attempts to fetch WPAD script.
+---
+ src/discovery.c | 126 ++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 111 insertions(+), 15 deletions(-)
+
+diff --git a/src/discovery.c b/src/discovery.c
+index 8878ece..f807f20 100644
+--- a/src/discovery.c
++++ b/src/discovery.c
+@@ -50,6 +50,8 @@
+ 
+ static sd_event *event = NULL;
+ static sd_bus *system_bus = NULL;
++static char *proxy_config_str = NULL; // Track config string for cleanup
++static char *wpad_host = NULL; // Track WPAD host for redundant requests
+ 
+ char *resolve(char *str)
+ {
+@@ -87,23 +89,32 @@ int send_to_pacrunner(char *host)
+ {
+         sd_bus_error errstr = SD_BUS_ERROR_NULL;
+         sd_bus_message *obj = NULL;
+-        char *configstr, *url;
++        char *configstr, *url = NULL;
+         int ret = -1;
+ 
+         // FIXME: need to support HTTPS URLs?
+-        if (asprintf(&url, "http://%s/wpad.dat", host) < 0) {
++        if (host && asprintf(&url, "http://%s/wpad.dat", host) < 0) {
+                 return -1;
+         }
++        if (url) {
++                fprintf(stderr, "Setting PAC url: %s\n", url);
+ 
+-        fprintf(stderr, "PAC url: %s\n", url);
+-
+-        ret = sd_bus_call_method(system_bus, "org.pacrunner",
+-                                 "/org/pacrunner/manager",
+-                                 "org.pacrunner.Manager",
+-                                 "CreateProxyConfiguration",
+-                                 &errstr, &obj, "a{sv}", 2,
+-                                 "Method", "s", "auto",
+-                                 "URL", "s", url);
++                ret = sd_bus_call_method(system_bus, "org.pacrunner",
++                                         "/org/pacrunner/manager",
++                                         "org.pacrunner.Manager",
++                                         "CreateProxyConfiguration",
++                                         &errstr, &obj, "a{sv}", 2,
++                                         "Method", "s", "auto",
++                                         "URL", "s", url);
++        } else {
++                fprintf(stderr, "Setting DIRECT\n");
++                ret = sd_bus_call_method(system_bus, "org.pacrunner",
++                                         "/org/pacrunner/manager",
++                                         "org.pacrunner.Manager",
++                                         "CreateProxyConfiguration",
++                                         &errstr, &obj, "a{sv}", 1,
++                                         "Method", "s", "direct");
++        }
+         if (ret < 0) {
+                 fprintf(stderr, "Failed to create proxy config: %s\n",
+                         errstr.message);
+@@ -118,8 +129,17 @@ int send_to_pacrunner(char *host)
+ 
+         fprintf(stderr, "Registered config: %s\n", configstr);
+ 
+-        // FIXME: need to call DestroyProxyConfiguration when finished with the
+-        // current configuration.
++        /* Track the config string for cleanup */
++        proxy_config_str = strdup(configstr);
++
++        /* Track the WPAD host so we don't send duplicate requests */
++        if (wpad_host) {
++                free(wpad_host);
++                wpad_host = NULL;
++        }
++        if (host) {
++                wpad_host = strdup(host);
++        }
+ 
+         ret = 0;
+ bail:
+@@ -130,6 +150,37 @@ bail:
+ 
+ }
+ 
++int cleanup_pacrunner()
++{
++        sd_bus_error errstr = SD_BUS_ERROR_NULL;
++        sd_bus_message *obj = NULL;
++        int ret = -1;
++
++        /* Nothing to clean up */
++        if (proxy_config_str == NULL) {
++                fprintf(stderr, "No proxy config to clean up\n");
++                return 0;
++        }
++
++        fprintf(stderr, "Cleaning up proxy config: %s\n", proxy_config_str);
++
++        ret = sd_bus_call_method(system_bus, "org.pacrunner",
++                                 "/org/pacrunner/manager",
++                                 "org.pacrunner.Manager",
++                                 "DestroyProxyConfiguration",
++                                 &errstr, &obj, "o", proxy_config_str);
++        if (ret < 0) {
++                fprintf(stderr, "Failed to remove proxy config: %s\n",
++                        errstr.message);
++        }
++
++        sd_bus_error_free(&errstr);
++        free(proxy_config_str);
++        proxy_config_str = NULL;
++
++        return ret;
++}
++
+ static int state_fd = -1;
+ static const char *state_file = "/run/pacrunner/pac_active";
+ 
+@@ -178,9 +229,20 @@ static int pacrunner_setup(void)
+                 }
+ 
+                 fprintf(stderr, "Unable to find wpad host\n");
+-                return 2;
++                break;
+         }
+ 
++        /* Avoid sending duplicate requests */
++        if (domain == NULL && wpad_host == NULL) {
++                fprintf(stderr, "WPAD host not found -- no change\n");
++                return 0;
++        }
++        if (domain && wpad_host && strcmp(domain, wpad_host) == 0) {
++                fprintf(stderr, "WPAD host %s -- no change\n", domain);
++                free(domain);
++                return 0;
++        }
++        cleanup_pacrunner();
+         if (send_to_pacrunner(domain) < 0) {
+                 free(domain);
+                 return 1;
+@@ -214,6 +276,16 @@ static int match_callback(sd_bus_message *m, void *userdata, sd_bus_error *ret_e
+         return 0;
+ }
+ 
++static int network_change_callback(sd_bus_message *m, void *userdata, sd_bus_error *ret_error)
++{
++        /* TODO: do we need to check if the event is relevant to us */
++        fprintf(stderr, "Network change detected\n");
++
++        pacrunner_setup();
++
++        return 0;
++}
++
+ int main(void)
+ {
+         int ret = 0;
+@@ -239,7 +311,31 @@ int main(void)
+                              match_callback,
+                              NULL);
+         if (ret < 0) {
+-                fprintf(stderr, "Failed to add bus match\n");
++                fprintf(stderr, "Failed to add bus match for NameOwnerChanged\n");
++                ret = 3;
++                goto out;
++        }
++
++        /* register to network configuration changes */
++        // signal time=1746482390.120081 sender=:1.6 -> destination=(null destination) serial=4642 path=/org/freedesktop/NetworkManager/DnsManager; interface=org.freedesktop.DBus.Properties; member=PropertiesChanged
++        ret = sd_bus_add_match(system_bus,
++                             NULL,
++                             "type='signal',path='/org/freedesktop/NetworkManager/DnsManager',interface='org.freedesktop.DBus.Properties',member='PropertiesChanged'",
++                             network_change_callback,
++                             NULL);
++        if (ret < 0) {
++                fprintf(stderr, "Failed to add bus match for DNSManager\n");
++                ret = 3;
++                goto out;
++        }
++        // signal time=1746483120.595762 sender=:1.6 -> destination=(null destination) serial=5189 path=/org/freedesktop/NetworkManager/ActiveConnection/29; interface=org.freedesktop.NetworkManager.Connection.Active; member=StateChanged
++        ret = sd_bus_add_match(system_bus,
++                             NULL,
++                             "type='signal',interface='org.freedesktop.NetworkManager.Connection.Active',member='StateChanged'",
++                             network_change_callback,
++                             NULL);
++        if (ret < 0) {
++                fprintf(stderr, "Failed to add bus match for NetworkManager.Connection.Active\n");
+                 ret = 3;
+                 goto out;
+         }
+-- 
+2.49.0
+

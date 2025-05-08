@@ -7,7 +7,7 @@
 #
 Name     : pacrunner
 Version  : 0.19
-Release  : 65
+Release  : 66
 URL      : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.19.tar.xz
 Source0  : https://www.kernel.org/pub/linux/network/connman/pacrunner-0.19.tar.xz
 Summary  : Proxy Configuration Library
@@ -35,6 +35,7 @@ Patch4: 0004-Use-trimmed-down-glibc-C-locale.patch
 Patch5: 0005-Add-port-stripping-for-FindProxyForURL.patch
 Patch6: 0006-Don-t-print-out-pointers-for-no-reason.patch
 Patch7: 0007-Write-out-wpad.dat-to-run-pacrunner-wpad.dat.patch
+Patch8: 0008-Make-pacdiscovery-catch-network-changes.patch
 
 %description
 PACrunner - Proxy configuration daemon
@@ -105,6 +106,7 @@ cd %{_builddir}/pacrunner-0.19
 %patch -P 5 -p1
 %patch -P 6 -p1
 %patch -P 7 -p1
+%patch -P 8 -p1
 pushd ..
 cp -a pacrunner-0.19 buildavx2
 popd
@@ -114,7 +116,7 @@ export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C.UTF-8
-export SOURCE_DATE_EPOCH=1746639054
+export SOURCE_DATE_EPOCH=1746735072
 export GCC_IGNORE_WERROR=1
 CLEAR_INTERMEDIATE_CFLAGS="$CLEAR_INTERMEDIATE_CFLAGS -fdebug-types-section -femit-struct-debug-baseonly -fno-lto -g1 -gno-column-info -gno-variable-location-views -gz=zstd "
 CLEAR_INTERMEDIATE_FCFLAGS="$CLEAR_INTERMEDIATE_FFLAGS -fdebug-types-section -femit-struct-debug-baseonly -fno-lto -g1 -gno-column-info -gno-variable-location-views -gz=zstd "
@@ -170,7 +172,7 @@ FFLAGS="$CLEAR_INTERMEDIATE_FFLAGS"
 FCFLAGS="$CLEAR_INTERMEDIATE_FCFLAGS"
 ASFLAGS="$CLEAR_INTERMEDIATE_ASFLAGS"
 LDFLAGS="$CLEAR_INTERMEDIATE_LDFLAGS"
-export SOURCE_DATE_EPOCH=1746639054
+export SOURCE_DATE_EPOCH=1746735072
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/package-licenses/pacrunner
 cp %{_builddir}/pacrunner-%{version}/COPYING %{buildroot}/usr/share/package-licenses/pacrunner/a7a897a4bde987e597c04f16a9c28f6d3f57916d || :
